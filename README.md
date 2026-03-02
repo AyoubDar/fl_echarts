@@ -4,6 +4,8 @@ A Flutter package that brings the full power of [Apache ECharts](https://echarts
 
 **Supported platforms:** Android · iOS · macOS · Windows
 
+**Unsupported platforms:** Web (due to WebView limitations)
+
 ---
 
 ## Features
@@ -25,8 +27,7 @@ A Flutter package that brings the full power of [Apache ECharts](https://echarts
 
 ```yaml
 dependencies:
-  fl_echarts:
-    path: ../fl_echarts   # or the published package name
+  fl_echarts: ^0.2.0
 ```
 
 ### 2. Platform setup

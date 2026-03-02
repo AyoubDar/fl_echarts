@@ -1,11 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
 
-import 'package:fl_echarts/src/platform_detector.dart';
+import 'src/platform_utils.dart';
 import 'package:flutter/material.dart';
 
-import 'package:webview_flutter/webview_flutter.dart' as mobile;
-import 'package:webview_windows/webview_windows.dart' as windows;
+import 'src/webview_factory.dart';
 
 typedef EChartsMessageCallback = void Function(String message);
 
@@ -106,8 +105,7 @@ class ECharts extends StatefulWidget {
 }
 
 class _EChartsState extends State<ECharts> {
-  mobile.WebViewController? _mobileController;
-  windows.WebviewController? _windowsController;
+  EChartsWebView? _webView;
 
   bool _isLoaded = false;
   bool _isInitializing = true;
@@ -142,7 +140,7 @@ class _EChartsState extends State<ECharts> {
   void dispose() {
     // Detach controller
     widget.controller?._detach();
-    _windowsController?.dispose();
+    _webView?.dispose();
     super.dispose();
   }
 
@@ -152,78 +150,67 @@ class _EChartsState extends State<ECharts> {
       try {
         _echartsScript = await rootBundle
             .loadString('packages/fl_echarts/assets/echarts.min.js');
-      } catch (_) {
+      } catch (e) {
         // Fallback for local development
-        _echartsScript = await rootBundle.loadString('assets/echarts.min.js');
+         try {
+          _echartsScript = await rootBundle.loadString('assets/echarts.min.js');
+        } catch (e) {
+          setState(() {
+            _lastError = 'Failed to load echarts script: $e';
+            _isInitializing = false;
+          });
+          return;
+        }
       }
 
-      if (PlatformDetector.usesFlutterWebView) {
-        await _initializeMobileWebView();
-      } else if (PlatformDetector.isWindows) {
-        await _initializeWindowsWebView();
+      if (_echartsScript == null || _echartsScript!.isEmpty) {
+        setState(() {
+           _lastError = 'ECharts script is empty';
+           _isInitializing = false;
+        });
+        return;
       }
+
+      _webView = createWebView();
+      await _webView!.init(
+        () {
+          setState(() {
+            _isInitializing = false;
+          });
+        },
+        (error) {
+          setState(() {
+            _lastError = error;
+            _isInitializing = false;
+          });
+        },
+        (message) {
+           _handleMessage(message);
+        },
+        () {
+           widget.onWebViewCreated?.call();
+        },
+        _getHtmlContent(),
+      );
     } catch (e) {
       setState(() {
         _lastError = e.toString();
         _isInitializing = false;
       });
-      debugPrint('Error initializing WebView: $e');
     }
   }
 
-  Future<void> _initializeMobileWebView() async {
-    _mobileController = mobile.WebViewController()
-      ..setJavaScriptMode(mobile.JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(
-        mobile.NavigationDelegate(
-          onPageFinished: (String url) {
-            setState(() {
-              _isInitializing = false;
-            });
-          },
-          onWebResourceError: (mobile.WebResourceError error) {
-            setState(() {
-              _lastError = 'WebView error: ${error.description}';
-              _isInitializing = false;
-            });
-          },
-        ),
-      )
-      ..addJavaScriptChannel(
-        'FlutterECharts',
-        onMessageReceived: (mobile.JavaScriptMessage message) {
-          _handleMessage(message.message);
-        },
-      );
-
-    await _mobileController!.loadHtmlString(_getHtmlContent());
-    widget.onWebViewCreated?.call();
-  }
-
-  Future<void> _initializeWindowsWebView() async {
-    _windowsController = windows.WebviewController();
-    await _windowsController!.initialize();
-
-    await _windowsController!.setBackgroundColor(Colors.transparent);
-    await _windowsController!.loadStringContent(_getHtmlContent());
-
-    _windowsController!.webMessage.listen((message) {
-      _handleMessage(message);
-    });
-
-    setState(() {
-      _isInitializing = false;
-    });
-
-    widget.onWebViewCreated?.call();
-  }
+  // _initializeMobileWebView and _initializeWindowsWebView are removed as they are now handled by EChartsWebView impls.
+  // ...
 
   void _handleMessage(String message) {
     try {
       if (message.contains('"type":"ready"')) {
         setState(() {
           _isLoaded = true;
+          _isInitializing = false;
           _manualLoading = false;
+          _loadingText = null;
         });
         widget.onChartReady?.call();
       } else if (message.contains('"type":"error"')) {
@@ -234,7 +221,7 @@ class _EChartsState extends State<ECharts> {
         });
       }
     } catch (e) {
-      debugPrint('Error parsing message: $e');
+      // Ignore error
     }
 
     widget.onMessage?.call(message);
@@ -452,9 +439,7 @@ class _EChartsState extends State<ECharts> {
       _loadingText = text;
     });
 
-    final String script = '''
-      showLoading(${jsonEncode(text ?? 'Loading...')});
-    ''';
+    final String script = 'showLoading(${jsonEncode(text ?? 'Loading...')});';
     _executeScript(script);
   }
 
@@ -464,21 +449,17 @@ class _EChartsState extends State<ECharts> {
       _loadingText = null;
     });
 
-    const String script = '''
-      hideLoading();
-    ''';
+    const String script = 'hideLoading();';
     _executeScript(script);
   }
 
   Future<void> _executeScript(String script) async {
     try {
-      if (PlatformDetector.usesFlutterWebView && _mobileController != null) {
-        await _mobileController!.runJavaScript(script);
-      } else if (PlatformDetector.isWindows && _windowsController != null) {
-        await _windowsController!.executeScript(script);
+      if (_webView != null) {
+        await _webView!.runJavaScript(script);
       }
     } catch (e) {
-      debugPrint('Error executing script: $e');
+      // Ignore error
     }
   }
 
@@ -526,12 +507,9 @@ class _EChartsState extends State<ECharts> {
   }
 
   Widget _buildWebView() {
-    if (PlatformDetector.usesFlutterWebView && _mobileController != null) {
-      return mobile.WebViewWidget(controller: _mobileController!);
-    } else if (PlatformDetector.isWindows && _windowsController != null) {
-      return windows.Webview(_windowsController!);
+    if (_webView != null) {
+      return _webView!.build(context);
     }
-
     return const SizedBox.shrink();
   }
 

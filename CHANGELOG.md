@@ -1,3 +1,15 @@
+## 0.2.0
+
+* **BREAKING**: Removed web support due to platform limitations.
+* Improved error handling for unsupported platforms.
+* Updated `isSupported` check to exclude web.
+
+## 0.1.1
+
+* Segregate platform implementations to improve package analysis score.
+* Fix pubspec.yaml documentation links.
+* Update example dependency to current version.
+
 ## 0.1.0
 
 * Add macOS support (via `webview_flutter`).
