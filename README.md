@@ -27,7 +27,7 @@ A Flutter package that brings the full power of [Apache ECharts](https://echarts
 
 ```yaml
 dependencies:
-  fl_echarts: ^0.2.0
+  fl_echarts: ^0.3.0
 ```
 
 ### 2. Platform setup
