@@ -1,3 +1,12 @@
+## 0.3.0
+
+* Re-add **Web** support via a custom `HtmlElementView` iframe — no `webview_flutter_web` dependency, no `addJavaScriptChannel` limitation.
+* Fix web rendering: use a `Blob` object URL instead of `srcdoc` to safely load the 1 MB ECharts bundle.
+* Fix web: `runJavaScript` commands are delivered to the iframe via `postMessage`.
+* Re-add **Windows** support via `webview_windows`.
+* Fix widget lifecycle on web: force a `setState` after `init()` so the iframe enters the DOM before waiting for the `ready` message.
+* Package now supports 5 platforms: Android, iOS, macOS, Web, Windows.
+
 ## 0.2.0
 
 * **BREAKING**: Removed web support due to platform limitations.

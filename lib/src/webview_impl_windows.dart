@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:webview_windows/webview_windows.dart';
@@ -18,19 +17,19 @@ class EChartsWebViewWindows implements EChartsWebView {
     try {
       await _controller.initialize();
       await _controller.setBackgroundColor(Colors.transparent);
-      
+
       _controller.webMessage.listen((message) {
-         if (message is String) {
-            onMessage(message);
-         } else if (message is Map || message is List) {
-            try {
-              onMessage(jsonEncode(message));
-            } catch (e) {
-               onMessage(message.toString());
-            }
-         } else if (message != null) {
+        if (message is String) {
+          onMessage(message);
+        } else if (message is Map || message is List) {
+          try {
+            onMessage(jsonEncode(message));
+          } catch (e) {
             onMessage(message.toString());
-         }
+          }
+        } else if (message != null) {
+          onMessage(message.toString());
+        }
       });
 
       await _controller.loadStringContent(htmlContent);
@@ -40,7 +39,7 @@ class EChartsWebViewWindows implements EChartsWebView {
       onError(e.toString());
     }
   }
-  
+
   @override
   Future<void> loadHtmlString(String html) async {
     await _controller.loadStringContent(html);
@@ -61,5 +60,3 @@ class EChartsWebViewWindows implements EChartsWebView {
     _controller.dispose();
   }
 }
-
-EChartsWebView createWebView() => EChartsWebViewWindows();

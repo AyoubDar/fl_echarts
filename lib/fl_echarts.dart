@@ -152,7 +152,7 @@ class _EChartsState extends State<ECharts> {
             .loadString('packages/fl_echarts/assets/echarts.min.js');
       } catch (e) {
         // Fallback for local development
-         try {
+        try {
           _echartsScript = await rootBundle.loadString('assets/echarts.min.js');
         } catch (e) {
           setState(() {
@@ -165,13 +165,13 @@ class _EChartsState extends State<ECharts> {
 
       if (_echartsScript == null || _echartsScript!.isEmpty) {
         setState(() {
-           _lastError = 'ECharts script is empty';
-           _isInitializing = false;
+          _lastError = 'ECharts script is empty';
+          _isInitializing = false;
         });
         return;
       }
 
-      _webView = createWebView();
+      _webView = await createWebView();
       await _webView!.init(
         () {
           setState(() {
@@ -185,13 +185,17 @@ class _EChartsState extends State<ECharts> {
           });
         },
         (message) {
-           _handleMessage(message);
+          _handleMessage(message);
         },
         () {
-           widget.onWebViewCreated?.call();
+          widget.onWebViewCreated?.call();
         },
         _getHtmlContent(),
       );
+      // Force a rebuild so the WebView widget is inserted into the widget tree.
+      // On web, the IFrameElement only executes JS once it is in the DOM, which
+      // requires at least one build() call after _webView is assigned.
+      if (mounted) setState(() {});
     } catch (e) {
       setState(() {
         _lastError = e.toString();
@@ -366,6 +370,8 @@ class _EChartsState extends State<ECharts> {
                   if (window.chrome && window.chrome.webview) {
                     window.chrome.webview.postMessage(message);
                   }
+                  
+                  window.parent.postMessage(message, "*");
                 }
                 
                 let _waitAttempts = 0;
@@ -384,6 +390,19 @@ class _EChartsState extends State<ECharts> {
                 window.onload = function() {
                   waitForECharts();
                 };
+
+                // Listen for JS commands sent by Flutter on web (via iframe postMessage).
+                window.addEventListener('message', function(event) {
+                  if (event.data && event.data._flEchartsCmd === true &&
+                      typeof event.data.script === 'string') {
+                    try {
+                      // eslint-disable-next-line no-new-func
+                      (new Function(event.data.script))();
+                    } catch(e) {
+                      // ignore command errors
+                    }
+                  }
+                });
 
                 window.onerror = function(msg, url, line, col, error) {
                   const loading = document.getElementById('loading');

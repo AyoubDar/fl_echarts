@@ -1,6 +1,6 @@
 name: fl_echarts
-description: "ECharts visualization library for Flutter, supporting Android, iOS, macOS, and Windows via an embedded WebView."
-version: 0.2.0
+description: "ECharts for Flutter — Android, iOS, macOS, Web & Windows. No JS knowledge needed. Powered by an embedded WebView."
+version: 0.3.0
 homepage: https://github.com/AyoubDar/fl_echarts
 repository: https://github.com/AyoubDar/fl_echarts
 
@@ -8,12 +8,18 @@ environment:
   sdk: ^3.0.0
   flutter: ">=3.10.0"
 
+platforms:
+  android:
+  ios:
+  macos:
+  web:
+  windows:
+
 dependencies:
   flutter:
     sdk: flutter
 
   webview_flutter: ^4.13.0
-  webview_flutter_platform_interface: ^2.14.0
   webview_windows: ^0.4.0
 
 dev_dependencies:

@@ -25,6 +25,6 @@ class PlatformDetector {
   }
 
   /// Check if the current platform is supported by this package
-  static bool get isSupported => usesFlutterWebView || isWindows;
+  static bool get isSupported => usesFlutterWebView || isWindows || isWeb;
 }
 

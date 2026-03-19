@@ -2,9 +2,9 @@
 
 A Flutter package that brings the full power of [Apache ECharts](https://echarts.apache.org/) to your Flutter app via an embedded WebView — no JavaScript knowledge required.
 
-**Supported platforms:** Android · iOS · macOS · Windows
+**Supported platforms:** Android · iOS · macOS · Web · Windows
 
-**Unsupported platforms:** Web (due to WebView limitations)
+**Linux:** not yet supported (no viable webview backend available).
 
 ---
 
@@ -44,7 +44,9 @@ dependencies:
 </dict>
 ```
 
-**Windows** — follow the [webview_windows setup](https://pub.dev/packages/webview_windows#setup) (enable the `WebView2` runtime).
+**Web** — no extra steps. Charts render inside an iframe using the browser's native rendering.
+
+**Windows** — requires the **WebView2 Runtime** (pre-installed on Windows 10 21H2+ and all Windows 11). For older Windows 10 machines, users must install it from Microsoft. Follow the [webview_windows setup guide](https://pub.dev/packages/webview_windows#setup) for any additional project configuration.
 
 ---
 

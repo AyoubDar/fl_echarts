@@ -28,4 +28,4 @@ class EChartsWebViewUnsupported implements EChartsWebView {
   void dispose() {}
 }
 
-EChartsWebView createWebView() => EChartsWebViewUnsupported();
+Future<EChartsWebView> createWebView() async => EChartsWebViewUnsupported();
